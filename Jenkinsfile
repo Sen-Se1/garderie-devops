@@ -8,12 +8,12 @@ pipeline {
     }
 
     environment {
-        DOCKERHUB_CREDENTIALS = 'dockerhub-credentials'
         FRONTEND_IMAGE = 'garderie-frontend'
-        BACKEND_IMAGE = 'garderie-backend'
+        BACKEND_IMAGE  = 'garderie-backend'
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -26,6 +26,7 @@ pipeline {
                 dir('frontend') {
                     sh 'npm install'
                 }
+
                 dir('backend') {
                     sh 'npm install'
                 }
@@ -40,43 +41,114 @@ pipeline {
             }
         }
 
+        stage('Docker Hub Login') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        if [ -z "$DOCKERHUB_USER" ]; then
+                            echo "ERROR: Docker Hub username is empty."
+                            exit 1
+                        fi
+
+                        echo "$DOCKERHUB_TOKEN" | docker login \
+                            --username "$DOCKERHUB_USER" \
+                            --password-stdin
+                    '''
+                }
+            }
+        }
+
         stage('Build Frontend') {
             steps {
-                sh '''
-                    docker build \
-                      -t "$DOCKERHUB_USER/$FRONTEND_IMAGE:$BUILD_NUMBER" \
-                      -t "$DOCKERHUB_USER/$FRONTEND_IMAGE:latest" \
-                      ./frontend
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        docker build \
+                            -t "$DOCKERHUB_USER/$FRONTEND_IMAGE:$BUILD_NUMBER" \
+                            -t "$DOCKERHUB_USER/$FRONTEND_IMAGE:latest" \
+                            ./frontend
+                    '''
+                }
             }
         }
 
         stage('Build Backend') {
             steps {
-                sh '''
-                    docker build \
-                      -t "$DOCKERHUB_USER/$BACKEND_IMAGE:$BUILD_NUMBER" \
-                      -t "$DOCKERHUB_USER/$BACKEND_IMAGE:latest" \
-                      ./backend
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        docker build \
+                            -t "$DOCKERHUB_USER/$BACKEND_IMAGE:$BUILD_NUMBER" \
+                            -t "$DOCKERHUB_USER/$BACKEND_IMAGE:latest" \
+                            ./backend
+                    '''
+                }
             }
         }
 
         stage('Push Frontend') {
             steps {
-                sh '''
-                    docker push "$DOCKERHUB_USER/$FRONTEND_IMAGE:$BUILD_NUMBER"
-                    docker push "$DOCKERHUB_USER/$FRONTEND_IMAGE:latest"
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        docker push \
+                            "$DOCKERHUB_USER/$FRONTEND_IMAGE:$BUILD_NUMBER"
+
+                        docker push \
+                            "$DOCKERHUB_USER/$FRONTEND_IMAGE:latest"
+                    '''
+                }
             }
         }
 
         stage('Push Backend') {
             steps {
-                sh '''
-                    docker push "$DOCKERHUB_USER/$BACKEND_IMAGE:$BUILD_NUMBER"
-                    docker push "$DOCKERHUB_USER/$BACKEND_IMAGE:latest"
-                '''
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USER',
+                        passwordVariable: 'DOCKERHUB_TOKEN'
+                    )
+                ]) {
+                    sh '''
+                        set -eu
+
+                        docker push \
+                            "$DOCKERHUB_USER/$BACKEND_IMAGE:$BUILD_NUMBER"
+
+                        docker push \
+                            "$DOCKERHUB_USER/$BACKEND_IMAGE:latest"
+                    '''
+                }
             }
         }
     }
@@ -85,11 +157,26 @@ pipeline {
         always {
             sh 'docker logout || true'
         }
+
         success {
-            echo 'CI/CD réussi : tests, builds et publications terminés.'
+            echo '''
+            =========================================
+            CI/CD SUCCESSFUL!
+            Tests passed.
+            Frontend image built and pushed.
+            Backend image built and pushed.
+            =========================================
+            '''
         }
+
         failure {
-            echo 'CI/CD échoué. Consulte les logs de l’étape en erreur.'
+            echo '''
+            =========================================
+            CI/CD FAILED!
+            Check the first failed stage in the logs.
+            Docker images may not have been published.
+            =========================================
+            '''
         }
     }
 }
