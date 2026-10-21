@@ -9,7 +9,7 @@ Application web responsive pour une garderie, construite avec **Next.js, TypeScr
 - Récupération dynamique des données par le frontend.
 - Configuration de l'URL API par variable d'environnement.
 - Exécution locale séparée ou via Docker Compose.
-
+ 
 ## Architecture
 
 ```text
