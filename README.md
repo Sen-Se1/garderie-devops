@@ -281,14 +281,6 @@ curl -i http://localhost:4000/api/garderie
 
 Vérifier le port 4000, l'état du backend et les règles réseau entre les machines virtuelles.
 
-## 10. Bonnes pratiques
-
-- Ne pas committer de secrets ou de tokens dans Git.
-- Utiliser des credentials Jenkins pour l'authentification Docker Hub.
-- Vérifier les tests avant de publier les images.
-- Contrôler l'état des conteneurs et les logs après chaque déploiement.
-- Utiliser des tags d'image versionnés en environnement de production plutôt que de dépendre uniquement de `latest`.
-
 ---
 
 **Projet :** Garderie DevOps  
