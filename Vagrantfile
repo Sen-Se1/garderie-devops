@@ -5,6 +5,8 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder ".", "/vagrant"
 
   config.vm.network "private_network", ip: "192.168.56.10"
+  config.vm.network "forwarded_port", guest: 3000, host: 3000
+  config.vm.network "forwarded_port", guest: 4000, host: 4000
 
   config.vm.provider "libvirt" do |lv|
     lv.memory = 2048
