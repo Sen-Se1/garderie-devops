@@ -1,0 +1,14 @@
+---
+- name: Provision Ubuntu VM for Garderie DevOps
+  hosts: all
+  become: true
+
+  vars:
+    deploy_user: vagrant
+    docker_repo_arch: >-
+      {{ 'amd64' if ansible_architecture == 'x86_64'
+         else 'arm64' if ansible_architecture == 'aarch64'
+         else ansible_architecture }}
+
+  roles:
+    - docker
